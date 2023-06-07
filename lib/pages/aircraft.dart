@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:compareprivateplanesapp/utils/extentions.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 import '../main.dart';
@@ -17,6 +18,7 @@ class _AirCraftState extends State<AirCraft> {
   WebViewController? _webViewController;
   bool isLoading = true;
   final int _selectedIndex = 0;
+   
 
   void _onItemTapped(int index) {
     setState(() {
@@ -102,7 +104,7 @@ Page resource error:
                 )
               : WebViewWidget(
                   controller: _webViewController!,
-                ),
+                ),             
         ),
         bottomNavigationBar: BottomNavigationBar(
           items: [
