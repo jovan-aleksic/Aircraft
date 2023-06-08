@@ -44,6 +44,14 @@ class _MainAircraftState extends State<MainAircraft> {
             type: ContentBlockerActionType.CSS_DISPLAY_NONE,
             selector: ".root, .page-1, .page-last")));
 
+            contentBlockers.add(ContentBlocker(
+        trigger: ContentBlockerTrigger(
+          urlFilter: ".*",
+        ),
+        action: ContentBlockerAction(
+            type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+            selector: ".mob-icon-menu, .mob-menu-icon")));
+
 //     if (mounted) {
 //       _webViewController = WebViewController();
 //       _webViewController!
