@@ -5,7 +5,6 @@ import 'package:compareprivateplanesapp/utils/UrlsOfWebsite.dart';
 import 'package:compareprivateplanesapp/utils/extentions.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 import '../main.dart';
 
@@ -19,9 +18,10 @@ class MainAircraft extends StatefulWidget {
 class _MainAircraftState extends State<MainAircraft> {
   // WebViewController? _webViewController;
   InAppWebViewController? webViewController;
+  final List<ContentBlocker> contentBlockers = [];
   bool isLoading = true;
   final int _selectedIndex = 0;
-  final List<ContentBlocker> contentBlockers = [];
+  
 
   void _onItemTapped(int index) {
     setState(() {

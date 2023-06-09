@@ -1,6 +1,8 @@
+import 'dart:developer';
+
 import 'package:compareprivateplanesapp/utils/UrlsOfWebsite.dart';
 import 'package:compareprivateplanesapp/utils/extentions.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import 'dart:async';
@@ -13,7 +15,9 @@ class Premium extends StatefulWidget {
 }
 
 class _PremiumState extends State<Premium> {
-  WebViewController? _webViewController;
+  // WebViewController? _webViewController;
+  InAppWebViewController? webViewController;
+  final List<ContentBlocker> contentBlockers = [];
   bool isLoading = true;
   final int _selectedIndex = 0;
 
@@ -30,51 +34,66 @@ class _PremiumState extends State<Premium> {
   @override
   void initState() {
     super.initState();
-    if (mounted) {
-      _webViewController = WebViewController();
-      _webViewController!
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0x00000000))
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onProgress: (int progress) {
-              debugPrint('WebView is loading (progress : $progress%)');
-            },
-            onPageStarted: (String url) {
-              debugPrint('Page started loading: $url');
-            },
-            onPageFinished: (String url) {
-              debugPrint('Page finished loading: $url');
-            },
-            onWebResourceError: (WebResourceError error) {
-              debugPrint('''
-Page resource error:
-  code: ${error.errorCode}
-  description: ${error.description}
-  errorType: ${error.errorType}
-  isForMainFrame: ${error.isForMainFrame}
-          ''');
-            },
-            onNavigationRequest: (NavigationRequest request) {
-              return NavigationDecision.navigate;
-            },
-            onUrlChange: (UrlChange change) {},
-          ),
-        )
-        ..addJavaScriptChannel(
-          'Toaster',
-          onMessageReceived: (JavaScriptMessage message) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message.message)),
-            );
-          },
-        )
-        ..loadRequest(
-          Uri.parse(
-            UrlsOfWebsite.PREMIUM_PAGE_URL_IN_HOME,
-          ),
-        ).then((value) => setState(() => isLoading = false));
-    }
+    contentBlockers.add(ContentBlocker(
+        trigger: ContentBlockerTrigger(
+          urlFilter: ".*",
+        ),
+        action: ContentBlockerAction(
+            type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+            selector: ".root, .page-1, .page-last")));
+
+            contentBlockers.add(ContentBlocker(
+        trigger: ContentBlockerTrigger(
+          urlFilter: ".*",
+        ),
+        action: ContentBlockerAction(
+            type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+            selector: ".mob-icon-menu, .mob-menu-icon")));
+//     if (mounted) {
+//       _webViewController = WebViewController();
+//       _webViewController!
+//         ..setJavaScriptMode(JavaScriptMode.unrestricted)
+//         ..setBackgroundColor(const Color(0x00000000))
+//         ..setNavigationDelegate(
+//           NavigationDelegate(
+//             onProgress: (int progress) {
+//               debugPrint('WebView is loading (progress : $progress%)');
+//             },
+//             onPageStarted: (String url) {
+//               debugPrint('Page started loading: $url');
+//             },
+//             onPageFinished: (String url) {
+//               debugPrint('Page finished loading: $url');
+//             },
+//             onWebResourceError: (WebResourceError error) {
+//               debugPrint('''
+// Page resource error:
+//   code: ${error.errorCode}
+//   description: ${error.description}
+//   errorType: ${error.errorType}
+//   isForMainFrame: ${error.isForMainFrame}
+//           ''');
+//             },
+//             onNavigationRequest: (NavigationRequest request) {
+//               return NavigationDecision.navigate;
+//             },
+//             onUrlChange: (UrlChange change) {},
+//           ),
+//         )
+//         ..addJavaScriptChannel(
+//           'Toaster',
+//           onMessageReceived: (JavaScriptMessage message) {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(content: Text(message.message)),
+//             );
+//           },
+//         )
+//         ..loadRequest(
+//           Uri.parse(
+//             UrlsOfWebsite.PREMIUM_PAGE_URL_IN_HOME,
+//           ),
+//         ).then((value) => setState(() => isLoading = false));
+//     }
   }
 
   @override
@@ -95,14 +114,34 @@ Page resource error:
           child: const Icon(Icons.keyboard_backspace),
         ),
         body: SafeArea(
-          child: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
-              : WebViewWidget(
-                  controller: _webViewController!,
-                ),
-        ),
+              child: Stack(children: [
+            if (isLoading)
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
+            Expanded(
+              child: InAppWebView(
+                initialUrlRequest: URLRequest(
+                    url: Uri.parse(
+                  UrlsOfWebsite.PREMIUM_PAGE_URL_IN_HOME,
+                )),
+                initialOptions: InAppWebViewGroupOptions(
+                    ios: IOSInAppWebViewOptions(),
+                    crossPlatform:
+                        InAppWebViewOptions(contentBlockers: contentBlockers)),
+                onWebViewCreated: (controller) {
+                  webViewController = controller;
+                },
+                onProgressChanged: (controller, progress) =>
+                    {log("cur progress : $progress")},
+                onLoadStop: (InAppWebViewController controller, Uri? uri) {
+                  setState(() {
+                    isLoading = false;
+                  });
+                },
+              ),
+            )
+          ])),
         bottomNavigationBar: BottomNavigationBar(
           items: [
             BottomNavigationBarItem(icon: Image.asset("icons/home_icon.png", width: 30, height: 30), label: "Home"),

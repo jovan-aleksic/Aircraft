@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 
 class Settings extends StatefulWidget {
   const Settings({Key? key}) : super(key: key);
@@ -28,7 +27,7 @@ class _SettingsState extends State<Settings> {
     getSettingsData();
     super.initState();
   }
-  late  WebViewController _controller;
+  // late  WebViewController _controller;
 
   @override
   Widget build(BuildContext context) {
@@ -43,12 +42,12 @@ class _SettingsState extends State<Settings> {
     }
 
     return WillPopScope(
-      onWillPop : () async {
-        if (await _controller.canGoBack()) {
-          _controller.goBack();
-        }else{
-        }
-        return false;
+      onWillPop : () {
+        // if (await _controller.canGoBack()) {
+        //   _controller.goBack();
+        // }else{
+        // }
+        return Future.value(false);
       },
       child: Column(
         children: [

@@ -1,7 +1,9 @@
+import 'dart:developer';
+
 import 'package:compareprivateplanesapp/utils/extentions.dart';
 import 'package:animated_button_bar/animated_button_bar.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '../utils/UrlsOfWebsite.dart';
 import '../main.dart';
 import 'dart:async';
@@ -17,7 +19,8 @@ class About extends StatefulWidget {
 
 class _AboutState extends State<About> {
   String webUrlPage = "https://compareprivateplanes.com/about";
-  late WebViewController _controller;
+  InAppWebViewController? webViewController;
+  final List<ContentBlocker> contentBlockers = [];
   late Timer _timer;
   var currentIndex = 0;
   final int _selectedIndex = 0;
@@ -143,57 +146,73 @@ class AboutPage extends StatefulWidget {
 }
 
 class _AboutPageState extends State<AboutPage> {
-   WebViewController? _webViewController;
+   InAppWebViewController? webViewController;
+  final List<ContentBlocker> contentBlockers = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    if (mounted) {
-      _webViewController = WebViewController();
-      _webViewController!
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0x00000000))
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onProgress: (int progress) {
-              debugPrint('WebView is loading (progress : $progress%)');
-            },
-            onPageStarted: (String url) {
-              debugPrint('Page started loading: $url');
-            },
-            onPageFinished: (String url) {
-              debugPrint('Page finished loading: $url');
-            },
-            onWebResourceError: (WebResourceError error) {
-              debugPrint('''
-Page resource error:
-  code: ${error.errorCode}
-  description: ${error.description}
-  errorType: ${error.errorType}
-  isForMainFrame: ${error.isForMainFrame}
-          ''');
-            },
-            onNavigationRequest: (NavigationRequest request) {
-              return NavigationDecision.navigate;
-            },
-            onUrlChange: (UrlChange change) {},
-          ),
-        )
-        ..addJavaScriptChannel(
-          'Toaster',
-          onMessageReceived: (JavaScriptMessage message) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message.message)),
-            );
-          },
-        )
-        ..loadRequest(
-          Uri.parse(
-            UrlsOfWebsite.ABOUT_PAGE_URL,
-          ),
-        ).then((value) => setState(() => isLoading = false));
-    }
+//     if (mounted) {
+//       _webViewController = WebViewController();
+//       _webViewController!
+//         ..setJavaScriptMode(JavaScriptMode.unrestricted)
+//         ..setBackgroundColor(const Color(0x00000000))
+//         ..setNavigationDelegate(
+//           NavigationDelegate(
+//             onProgress: (int progress) {
+//               debugPrint('WebView is loading (progress : $progress%)');
+//             },
+//             onPageStarted: (String url) {
+//               debugPrint('Page started loading: $url');
+//             },
+//             onPageFinished: (String url) {
+//               debugPrint('Page finished loading: $url');
+//             },
+//             onWebResourceError: (WebResourceError error) {
+//               debugPrint('''
+// Page resource error:
+//   code: ${error.errorCode}
+//   description: ${error.description}
+//   errorType: ${error.errorType}
+//   isForMainFrame: ${error.isForMainFrame}
+//           ''');
+//             },
+//             onNavigationRequest: (NavigationRequest request) {
+//               return NavigationDecision.navigate;
+//             },
+//             onUrlChange: (UrlChange change) {},
+//           ),
+//         )
+//         ..addJavaScriptChannel(
+//           'Toaster',
+//           onMessageReceived: (JavaScriptMessage message) {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(content: Text(message.message)),
+//             );
+//           },
+//         )
+//         ..loadRequest(
+//           Uri.parse(
+//             UrlsOfWebsite.ABOUT_PAGE_URL,
+//           ),
+//         ).then((value) => setState(() => isLoading = false));
+//     }
+contentBlockers.add(ContentBlocker(
+        trigger: ContentBlockerTrigger(
+          urlFilter: ".*",
+        ),
+        action: ContentBlockerAction(
+            type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+            selector: ".root, .page-1, .page-last")));
+
+            contentBlockers.add(ContentBlocker(
+        trigger: ContentBlockerTrigger(
+          urlFilter: ".*",
+        ),
+        action: ContentBlockerAction(
+            type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+            selector: ".mob-icon-menu, .mob-menu-icon")));
   }
 
   @override
@@ -213,15 +232,35 @@ Page resource error:
           backgroundColor: '#1E1F4D'.toColor(),
           child: const Icon(Icons.keyboard_backspace),
         ),
-        body: SafeArea(
-          child: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
-              : WebViewWidget(
-                  controller: _webViewController!,
-                ),
-        ),
+           body: SafeArea(
+              child: Stack(children: [
+            if (isLoading)
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
+            Expanded(
+              child: InAppWebView(
+                initialUrlRequest: URLRequest(
+                    url: Uri.parse(
+                  UrlsOfWebsite.ABOUT_PAGE_URL,
+                )),
+                initialOptions: InAppWebViewGroupOptions(
+                    ios: IOSInAppWebViewOptions(),
+                    crossPlatform:
+                        InAppWebViewOptions(contentBlockers: contentBlockers)),
+                onWebViewCreated: (controller) {
+                  webViewController = controller;
+                },
+                onProgressChanged: (controller, progress) =>
+                    {log("cur progress : $progress")},
+                onLoadStop: (InAppWebViewController controller, Uri? uri) {
+                  setState(() {
+                    isLoading = false;
+                  });
+                },
+              ),
+            )
+          ])),
       ),
     );
   }
@@ -235,57 +274,73 @@ class ContactPage extends StatefulWidget {
 }
 
 class _ContactPageState extends State<ContactPage> {
-  WebViewController? _webViewController;
+  InAppWebViewController? webViewController;
+  final List<ContentBlocker> contentBlockers = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    if (mounted) {
-      _webViewController = WebViewController();
-      _webViewController!
-        ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0x00000000))
-        ..setNavigationDelegate(
-          NavigationDelegate(
-            onProgress: (int progress) {
-              debugPrint('WebView is loading (progress : $progress%)');
-            },
-            onPageStarted: (String url) {
-              debugPrint('Page started loading: $url');
-            },
-            onPageFinished: (String url) {
-              debugPrint('Page finished loading: $url');
-            },
-            onWebResourceError: (WebResourceError error) {
-              debugPrint('''
-Page resource error:
-  code: ${error.errorCode}
-  description: ${error.description}
-  errorType: ${error.errorType}
-  isForMainFrame: ${error.isForMainFrame}
-          ''');
-            },
-            onNavigationRequest: (NavigationRequest request) {
-              return NavigationDecision.navigate;
-            },
-            onUrlChange: (UrlChange change) {},
-          ),
-        )
-        ..addJavaScriptChannel(
-          'Toaster',
-          onMessageReceived: (JavaScriptMessage message) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(message.message)),
-            );
-          },
-        )
-        ..loadRequest(
-          Uri.parse(
-            UrlsOfWebsite.CONTACT_PAGE_URL,
-          ),
-        ).then((value) => setState(() => isLoading = false));
-    }
+//     if (mounted) {
+//       _webViewController = WebViewController();
+//       _webViewController!
+//         ..setJavaScriptMode(JavaScriptMode.unrestricted)
+//         ..setBackgroundColor(const Color(0x00000000))
+//         ..setNavigationDelegate(
+//           NavigationDelegate(
+//             onProgress: (int progress) {
+//               debugPrint('WebView is loading (progress : $progress%)');
+//             },
+//             onPageStarted: (String url) {
+//               debugPrint('Page started loading: $url');
+//             },
+//             onPageFinished: (String url) {
+//               debugPrint('Page finished loading: $url');
+//             },
+//             onWebResourceError: (WebResourceError error) {
+//               debugPrint('''
+// Page resource error:
+//   code: ${error.errorCode}
+//   description: ${error.description}
+//   errorType: ${error.errorType}
+//   isForMainFrame: ${error.isForMainFrame}
+//           ''');
+//             },
+//             onNavigationRequest: (NavigationRequest request) {
+//               return NavigationDecision.navigate;
+//             },
+//             onUrlChange: (UrlChange change) {},
+//           ),
+//         )
+//         ..addJavaScriptChannel(
+//           'Toaster',
+//           onMessageReceived: (JavaScriptMessage message) {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(content: Text(message.message)),
+//             );
+//           },
+//         )
+//         ..loadRequest(
+//           Uri.parse(
+//             UrlsOfWebsite.CONTACT_PAGE_URL,
+//           ),
+//         ).then((value) => setState(() => isLoading = false));
+//     }
+contentBlockers.add(ContentBlocker(
+        trigger: ContentBlockerTrigger(
+          urlFilter: ".*",
+        ),
+        action: ContentBlockerAction(
+            type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+            selector: ".root, .page-1, .page-last")));
+
+            contentBlockers.add(ContentBlocker(
+        trigger: ContentBlockerTrigger(
+          urlFilter: ".*",
+        ),
+        action: ContentBlockerAction(
+            type: ContentBlockerActionType.CSS_DISPLAY_NONE,
+            selector: ".mob-icon-menu, .mob-menu-icon")));
   }
 
   @override
@@ -305,15 +360,35 @@ Page resource error:
           backgroundColor: '#1E1F4D'.toColor(),
           child: const Icon(Icons.keyboard_backspace),
         ),
-        body: SafeArea(
-          child: isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(),
-                )
-              : WebViewWidget(
-                  controller: _webViewController!,
-                ),
-        ),
+            body: SafeArea(
+              child: Stack(children: [
+            if (isLoading)
+              const Center(
+                child: CircularProgressIndicator(),
+              ),
+            Expanded(
+              child: InAppWebView(
+                initialUrlRequest: URLRequest(
+                    url: Uri.parse(
+                  UrlsOfWebsite.CONTACT_PAGE_URL,
+                )),
+                initialOptions: InAppWebViewGroupOptions(
+                    ios: IOSInAppWebViewOptions(),
+                    crossPlatform:
+                        InAppWebViewOptions(contentBlockers: contentBlockers)),
+                onWebViewCreated: (controller) {
+                  webViewController = controller;
+                },
+                onProgressChanged: (controller, progress) =>
+                    {log("cur progress : $progress")},
+                onLoadStop: (InAppWebViewController controller, Uri? uri) {
+                  setState(() {
+                    isLoading = false;
+                  });
+                },
+              ),
+            )
+          ])),
       ),
     );
   }
